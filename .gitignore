@@ -1,0 +1,24 @@
+# Local Android and Gradle state
+.gradle/
+.kotlin/
+**/build/
+local.properties
+.idea/
+*.iml
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Signing credentials and local secrets
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+.env
+.env.*
+!.env.example
+
+# Generated packages are not part of the initial scaffold
+*.apk
+*.aab
