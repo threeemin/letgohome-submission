@@ -25,6 +25,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+        buildConfigField("boolean", "OFFLINE_DEMO", "false")
         buildConfigField("String", "KAKAO_MAP_NATIVE_APP_KEY", buildStringLiteral(appSetting("KAKAO_MAP_NATIVE_APP_KEY").trim()))
         buildConfigField("String", "ROUTE_PROXY_URL", buildStringLiteral(appSetting("ROUTE_PROXY_URL").trim()))
     }
@@ -33,6 +34,15 @@ android {
         debug {
             val proxy = appSetting("ROUTE_PROXY_URL").trim().ifBlank { "http://localhost:8765/route" }
             buildConfigField("String", "ROUTE_PROXY_URL", buildStringLiteral(proxy))
+        }
+        create("demo") {
+            initWith(getByName("debug"))
+            matchingFallbacks += "debug"
+            applicationIdSuffix = ".demo"
+            versionNameSuffix = "-demo"
+            buildConfigField("boolean", "OFFLINE_DEMO", "true")
+            buildConfigField("String", "KAKAO_MAP_NATIVE_APP_KEY", buildStringLiteral(""))
+            buildConfigField("String", "ROUTE_PROXY_URL", buildStringLiteral(""))
         }
         release {
             isMinifyEnabled = false

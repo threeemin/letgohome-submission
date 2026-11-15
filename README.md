@@ -14,6 +14,12 @@ JDK 17, Android SDK Platform 35와 Build Tools 35.0.0이 필요합니다. Androi
 ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
 ```
 
+## 오프라인 시연 APK
+
+`./gradlew :app:assembleDemo`로 APK를 빌드합니다. 출력 경로는 `app/build/outputs/apk/demo/app-demo.apk`입니다. Android 9(API 28) 이상에서 `adb install -r app/build/outputs/apk/demo/app-demo.apk`로 설치할 수 있습니다.
+
+렛고홈 시연 → 귀가 → 서울역 검색 및 선택 → 홈 → 차박 시작 → 전력 순서로 시연합니다. 이 APK는 샘플 경로와 배터리 데이터를 내장하므로 네트워크, API 키, 로컬 중계가 필요 없습니다.
+
 ## 에뮬레이터 시연
 
 키 없이 시연하려면 에뮬레이터를 시작하고 다음과 같이 로컬 중계를 연결합니다.

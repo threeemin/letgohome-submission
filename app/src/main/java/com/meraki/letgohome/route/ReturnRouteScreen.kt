@@ -76,10 +76,13 @@ internal fun ReturnRouteScreen(
     navigation: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
-    val demo = BuildConfig.DEBUG && BuildConfig.KAKAO_MAP_NATIVE_APP_KEY.isBlank()
-    val enabled = BuildConfig.ROUTE_PROXY_URL.isNotBlank() &&
-        (demo || BuildConfig.KAKAO_MAP_NATIVE_APP_KEY.isNotBlank())
-    var origin by remember { mutableStateOf(if (demo) DemoOrigin else previous?.origin) }
+    val offline = BuildConfig.OFFLINE_DEMO
+    val demo = offline || (BuildConfig.DEBUG && BuildConfig.KAKAO_MAP_NATIVE_APP_KEY.isBlank())
+    val enabled = offline || (BuildConfig.ROUTE_PROXY_URL.isNotBlank() &&
+        (demo || BuildConfig.KAKAO_MAP_NATIVE_APP_KEY.isNotBlank()))
+    val demoOrigin = if (offline) OfflineRoutes.origin else DemoOrigin
+    val demoDestination = if (offline) OfflineRoutes.defaultDestination.point else DemoDestination
+    var origin by remember { mutableStateOf(if (demo) demoOrigin else previous?.origin) }
     val route = previous?.route
     val destination = previous?.destination
     var request by remember { mutableStateOf<RouteRequest?>(null) }
@@ -188,7 +191,16 @@ internal fun ReturnRouteScreen(
                 mapFailed -> EnergyPanel {
                     Text("카카오 지도를 열지 못했습니다. 앱 인증 또는 네트워크를 확인해 주세요.")
                 }
-                demo -> DemoRouteDiagram(route, { selectDestination(DemoDestination) }, mapModifier)
+                demo -> DemoRouteDiagram(
+                    route = route,
+                    origin = demoOrigin,
+                    destination = destination ?: demoDestination,
+                    onSelect = {
+                        val name = if (offline) OfflineRoutes.defaultDestination.name else null
+                        selectDestination(demoDestination, name)
+                    },
+                    modifier = mapModifier,
+                )
                 else -> KakaoRouteMap(
                     origin = previous?.origin ?: origin,
                     destination = destination,
@@ -365,6 +377,8 @@ private fun RouteSummary(route: DrivingRoute, reservedEnergyKwh: Double?) {
 @Composable
 private fun DemoRouteDiagram(
     route: DrivingRoute?,
+    origin: GeoPoint,
+    destination: GeoPoint,
     onSelect: () -> Unit,
     modifier: Modifier,
 ) {
@@ -372,20 +386,23 @@ private fun DemoRouteDiagram(
         modifier.background(CampSand).clickable(onClickLabel = "시연 목적지 선택", onClick = onSelect),
     ) {
         Canvas(Modifier.fillMaxSize()) {
+            val points = route?.paths.orEmpty().flatten() + listOf(origin, destination)
+            val west = points.minOf { it.longitude }
+            val east = points.maxOf { it.longitude }
+            val north = points.maxOf { it.latitude }
+            val south = points.minOf { it.latitude }
             fun project(point: GeoPoint): Offset {
-                val east = (point.longitude - DemoOrigin.longitude) /
-                    (DemoDestination.longitude - DemoOrigin.longitude)
-                val south = (point.latitude - DemoOrigin.latitude) /
-                    (DemoDestination.latitude - DemoOrigin.latitude)
-                return Offset(size.width * (0.18f + 0.64f * east.toFloat()), size.height * (0.28f + 0.44f * south.toFloat()))
+                val x = if (east == west) 0.5 else (point.longitude - west) / (east - west)
+                val y = if (north == south) 0.5 else (north - point.latitude) / (north - south)
+                return Offset(size.width * (0.18f + 0.64f * x.toFloat()), size.height * (0.28f + 0.44f * y.toFloat()))
             }
             route?.paths?.forEach { path ->
                 path.zipWithNext().forEach { (a, b) ->
                     drawLine(CampBlue, project(a), project(b), strokeWidth = 5.dp.toPx(), cap = StrokeCap.Round)
                 }
             }
-            drawCircle(CampBlue, radius = 8.dp.toPx(), center = project(DemoOrigin))
-            drawCircle(CampWarning, radius = 8.dp.toPx(), center = project(DemoDestination))
+            drawCircle(CampBlue, radius = 8.dp.toPx(), center = project(origin))
+            drawCircle(CampWarning, radius = 8.dp.toPx(), center = project(destination))
         }
         Text("가상 출발지", Modifier.align(Alignment.TopStart).padding(16.dp), color = CampBlue)
         Text("시연 목적지 선택", Modifier.align(Alignment.BottomEnd).padding(16.dp), color = CampBlue)

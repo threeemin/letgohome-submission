@@ -31,6 +31,7 @@ internal suspend fun loadDrivingRoute(
     destination: GeoPoint,
     demoOnly: Boolean,
 ): DrivingRoute = withContext(Dispatchers.IO) {
+    if (BuildConfig.OFFLINE_DEMO) return@withContext OfflineRoutes.route(origin, destination)
     val url = routeProxyEndpoint().buildUpon()
         .appendQueryParameter("origin", origin.asKakaoQuery())
         .appendQueryParameter("destination", destination.asKakaoQuery())
@@ -44,6 +45,7 @@ internal data class DestinationPlace(val name: String, val address: String, val 
 
 internal suspend fun searchDestinations(query: String, demoOnly: Boolean): List<DestinationPlace> =
     withContext(Dispatchers.IO) {
+        if (BuildConfig.OFFLINE_DEMO) return@withContext OfflineRoutes.search(query)
         val endpoint = routeProxyEndpoint()
         val url = endpoint.buildUpon()
             .path(endpoint.path.orEmpty().substringBeforeLast('/', "") + "/search")
